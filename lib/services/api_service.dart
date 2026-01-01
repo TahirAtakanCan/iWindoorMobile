@@ -24,4 +24,20 @@ class ApiService {
       return null;
     }
   }
+
+  // Node Bölme İsteği
+  Future<bool> splitNode(int nodeId, bool isVertical) async {
+    try {
+      final response = await _dio.post(
+        '/design/split/$nodeId',
+        queryParameters: {'isVertical': isVertical},
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Bölme Hatası: $e");
+      return false;
+    }
+  }
+
 }

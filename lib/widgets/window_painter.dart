@@ -27,50 +27,46 @@ class WindowPainter extends CustomPainter {
   }
 
   void _drawNode(Canvas canvas, WindowNode node, Offset origin, double scale) {
-    // mm cinsinden gelen ölçüleri ekran pikseline çevir
     double w = node.width * scale;
     double h = node.height * scale;
 
-    // Çizilecek dikdörtgen (Rect)
     Rect rect = Rect.fromLTWH(origin.dx, origin.dy, w, h);
-
-    // --- TİPE GÖRE ÇİZİM MANTIĞI ---
     Paint paint = Paint()..style = PaintingStyle.stroke;
 
-    if (node.nodeType == 'FRAME') {
-      // KASA: Kalın gri çerçeve
+    // --- TİP KONTROLLERİ ---
+    if (node.nodeType == 'FRAME' || node.nodeType == 'MULLION_VERTICAL' || node.nodeType == 'MULLION_HORIZONTAL') {
+      // Konteynerler için çerçeve
       paint.color = Colors.grey[800]!;
-      paint.strokeWidth = 4.0;
-      canvas.drawRect(rect, paint);
-      
-      // İçini hafif boyayalım (Opsiyonel)
-      Paint fillPaint = Paint()..color = Colors.grey[300]!;
-      canvas.drawRect(rect, fillPaint);
-      
-    } else if (node.nodeType == 'SASH') {
-      // KANAT: Kırmızı ince çerçeve (Örnek)
-      paint.color = Colors.red;
       paint.strokeWidth = 2.0;
-      // Kanat kasadan biraz içeride olur (Offset mantığı ileride eklenecek)
       canvas.drawRect(rect, paint);
-    } 
-    // ... Diğer tipler (GLASS, MULLION) buraya eklenecek
-
-    // --- KRİTİK NOKTA: ÇOCUKLARI ÇİZMEK (RECURSION) ---
-    // Eğer bu parçanın çocukları varsa, onları da çizdirmeliyiz.
-    // Şu an sadece tek parça (Root) olduğu için burası çalışmayacak ama 
-    // altyapımız hazır olsun.
-    
-    /* double currentX = origin.dx;
-    double currentY = origin.dy;
-    
-    for (var child in node.children) {
-      _drawNode(canvas, child, Offset(currentX, currentY), scale);
-      
-      // Basit mantık: Yan yana dizildiğini varsayalım (İleride dikey/yatay ayrımı yapacağız)
-      // currentX += child.width * scale; 
+    } else if (node.nodeType == 'EMPTY') {
+      // Boşluklar için kesikli çizgi veya daha silik bir renk
+      paint.color = Colors.blueAccent.withOpacity(0.5);
+      paint.strokeWidth = 1.0;
+      // Boşluğun ortasına "Boş" yazısı veya simgesi bile koyabilirsin
+      canvas.drawRect(rect, paint);
     }
-    */
+
+    // --- RECURSIVE ÇOCUKLARI ÇİZME ---
+    // Eğer çocukları varsa, onları doğru konuma yerleştirip çizdir
+    if (node.children.isNotEmpty) {
+      double currentX = origin.dx;
+      double currentY = origin.dy;
+
+      for (var child in node.children) {
+        // Çocuğu çiz
+        _drawNode(canvas, child, Offset(currentX, currentY), scale);
+
+        // Bir sonraki çocuğun koordinatını hesapla
+        if (node.nodeType == 'MULLION_VERTICAL') {
+          // Dikey bölünmüşse, X ekseninde ilerle (Yanına çiz)
+          currentX += child.width * scale;
+        } else if (node.nodeType == 'MULLION_HORIZONTAL') {
+          // Yatay bölünmüşse, Y ekseninde ilerle (Altına çiz)
+          currentY += child.height * scale;
+        }
+      }
+    }
   }
 
   @override
