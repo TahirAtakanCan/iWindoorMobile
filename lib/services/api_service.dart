@@ -83,4 +83,18 @@ class ApiService {
     }
   }
 
+  // Fiyat Hesaplat
+  Future<void> calculatePrice(int projectId) async {
+    try {
+      // DİKKAT: URL'in başındaki '/projects' kısmına ve {projectId}'ye dikkat et
+      // Backend URL yapımız: /api/v1/projects/{id}/calculate-price
+      // Dio BaseURL zaten /api/v1 ise, burası sadece /projects/... olmalı.
+      
+      await _dio.post('/projects/$projectId/calculate-price');
+      
+    } catch (e) {
+      print("Fiyat Hesaplama Hatası: $e");
+    }
+  }
+
 }

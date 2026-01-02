@@ -3,8 +3,8 @@ import '../services/api_service.dart';
 import '../models/project.dart';
 import '../widgets/window_painter.dart';
 import '../models/window_node.dart';
-import '../utils/utils.dart'; // findNodeAt fonksiyonunun burada olduğunu varsayıyoruz
-import '../models/profile.dart';
+import '../models/profile.dart'; // Profil modelini import et
+import '../utils/utils.dart';
 
 class ProjectScreen extends StatefulWidget {
   final int projectId;
@@ -31,49 +31,62 @@ class _ProjectScreenState extends State<ProjectScreen> {
     });
   }
 
-  // Bölme İşlemi (API İsteği)
+  // --- İŞLEM FONKSİYONLARI ---
+
+  // 1. Bölme İşlemi
   Future<void> _handleSplit(int nodeId, bool isVertical) async {
-    // Menüyü kapat
-    Navigator.pop(context); 
+    Navigator.pop(context); // Menüyü kapat
     
-    // Yükleniyor göstergesi (Opsiyonel ama iyi olur)
+    // Yükleniyor...
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("İşleniyor..."), duration: Duration(milliseconds: 500)),
     );
 
-    // API'ye istek at
+    // API İsteği: Böl
     bool success = await _apiService.splitNode(nodeId, isVertical);
 
     if (success) {
+      // YENİ: Fiyatı Hesaplat
+      await _apiService.calculatePrice(widget.projectId);
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Başarıyla bölündü!"), backgroundColor: Colors.green),
       );
-      // Ekranı yenile
-      _loadProject();
+      _loadProject(); // Ekranı yenile
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bir hata oluştu"), backgroundColor: Colors.red),
+        const SnackBar(content: Text("Hata oluştu"), backgroundColor: Colors.red),
       );
     }
   }
-  
-  // Not: artık doğrudan `_showMaterialDialog` kullanılıyor, bu helper fonksiyon gereksiz kaldı.
 
-  // Malzeme Seçim Dialogu
+  // 2. Sadece Tip Değiştirme (Örn: Sabit Cam için)
+  Future<void> _handleUpdateType(int nodeId, String type) async {
+    Navigator.pop(context); // Menüyü kapat
+
+    bool success = await _apiService.updateNodeType(nodeId, type);
+    
+    if (success) {
+      // YENİ: Fiyatı Hesaplat (Cam m2 fiyatı eklendiğinde burası da hesaplanacak)
+      await _apiService.calculatePrice(widget.projectId);
+      _loadProject();
+    }
+  }
+
+  // 3. Malzeme Seçim Dialogu (Profil Atama)
   void _showMaterialDialog(WindowNode node, String targetType) async {
     Navigator.pop(context); // Alttaki menüyü kapat
     
-    // 1. Önce Node Tipini Güncelle (Örn: EMPTY -> SASH)
-    // Bunu yapmazsak malzeme atayamayız (Validasyon varsa)
+    // A. Önce Node Tipini Güncelle (Örn: EMPTY -> SASH)
     await _apiService.updateNodeType(node.id, targetType); 
+    _loadProject(); // Çerçeveyi anlık göster
 
-    // 2. Uygun Profilleri Çek (Örn: SASH profilleri)
-    // Not: GLASS için ayrı mantık kurmalısın, şimdilik Profil üzerinden gidelim.
+    // B. Uygun Profilleri Çek
     List<Profile> profiles = await _apiService.getProfilesByType(targetType); 
 
     if (!mounted) return;
 
-    // 3. Listeyi Göster
+    // C. Listeyi Göster
     showDialog(
       context: context,
       builder: (context) {
@@ -82,30 +95,49 @@ class _ProjectScreenState extends State<ProjectScreen> {
           content: SizedBox(
             width: double.maxFinite,
             height: 300,
-            child: ListView.builder(
-              itemCount: profiles.length,
-              itemBuilder: (context, index) {
-                final profile = profiles[index];
-                return ListTile(
-                  title: Text(profile.name),
-                  subtitle: Text("${profile.code} - ${profile.pricePerMeter} TL/m"),
-                  onTap: () async {
-                    Navigator.pop(context); // Dialogu kapat
-                    
-                    // 4. Seçilen Malzemeyi Ata
-                    bool success = await _apiService.assignMaterial(node.id, profile.id, 'PROFILE');
-                    if (success) _loadProject();
+            child: profiles.isEmpty 
+              ? const Center(child: Text("Uygun profil bulunamadı."))
+              : ListView.builder(
+                  itemCount: profiles.length,
+                  itemBuilder: (context, index) {
+                    final profile = profiles[index];
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      child: ListTile(
+                        leading: const Icon(Icons.architecture, color: Colors.blueGrey),
+                        title: Text(profile.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("${profile.code}\n${profile.pricePerMeter} TL/m"),
+                        isThreeLine: true,
+                        onTap: () async {
+                          Navigator.pop(context); // Dialogu kapat
+                          
+                          // D. Seçilen Malzemeyi Ata
+                          bool success = await _apiService.assignMaterial(node.id, profile.id, 'PROFILE');
+                          
+                          if (success) {
+                            // YENİ: Fiyatı Hesaplat
+                            await _apiService.calculatePrice(widget.projectId);
+                            
+                            _loadProject(); // Ekranı yenile
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("${profile.name} atandı!")),
+                            );
+                          }
+                        },
+                      ),
+                    );
                   },
-                );
-              },
-            ),
+                ),
           ),
         );
       },
     );
   }
 
-  // Menüyü Güncelle
+  // --- ARAYÜZ ---
+
+  // Menüyü Göster
   void _showOptions(WindowNode node) {
     showModalBottomSheet(
       context: context,
@@ -122,7 +154,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 
                 // --- BÖLME SEÇENEKLERİ ---
                 const Align(alignment: Alignment.centerLeft, child: Text("Bölme İşlemleri", style: TextStyle(color: Colors.grey))),
-                const SizedBox(height: 10),
+                const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -131,15 +163,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
                   ],
                 ),
                 
-                const Divider(height: 30),
+                const SizedBox(height: 20),
                 
                 // --- DOLDURMA SEÇENEKLERİ ---
                 const Align(alignment: Alignment.centerLeft, child: Text("Atama İşlemleri", style: TextStyle(color: Colors.grey))),
-                const SizedBox(height: 10),
+                const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildActionButton(icon: Icons.crop_square, label: "Sabit Cam", color: Colors.lightBlue, onTap: () => _showMaterialDialog(node, 'GLASS')),
+                    // Sabit Cam için basit tip değişimi kullanıyoruz
+                    _buildActionButton(icon: Icons.crop_square, label: "Sabit Cam", color: Colors.lightBlue, onTap: () => _handleUpdateType(node.id, 'GLASS')),
+                    // Kanat için Profil Seçimi kullanıyoruz
                     _buildActionButton(icon: Icons.window, label: "Kanat", color: Colors.redAccent, onTap: () => _showMaterialDialog(node, 'SASH')),
                   ],
                 ),
@@ -151,26 +185,19 @@ class _ProjectScreenState extends State<ProjectScreen> {
     );
   }
 
-  // Menü butonu tasarım yardımcısı
-  Widget _buildActionButton({
-    required IconData icon, 
-    required String label, 
-    required VoidCallback onTap,
-    required Color color
-  }) {
+  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onTap, required Color color}) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            shape: const CircleBorder(),
-            padding: const EdgeInsets.all(15),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(30),
+          child: CircleAvatar(
+            radius: 25,
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color, size: 28),
           ),
-          child: Icon(icon, size: 30),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
       ],
     );
@@ -180,7 +207,25 @@ class _ProjectScreenState extends State<ProjectScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Çizim Masası"),
+        // YENİ: Başlıkta Fiyat Gösterimi
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Çizim Masası", style: TextStyle(fontSize: 16)),
+            FutureBuilder<Project?>(
+              future: _projectFuture,
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data != null) {
+                  return Text(
+                    "${snapshot.data!.totalPrice.toStringAsFixed(2)} TL", // FİYAT BURADA
+                    style: const TextStyle(fontSize: 18, color: Colors.green, fontWeight: FontWeight.bold),
+                  );
+                }
+                return const SizedBox(); // Yüklenirken boş
+              },
+            ),
+          ],
+        ),
         actions: [
           IconButton(onPressed: _loadProject, icon: const Icon(Icons.refresh))
         ],
@@ -188,22 +233,15 @@ class _ProjectScreenState extends State<ProjectScreen> {
       body: FutureBuilder<Project?>(
         future: _projectFuture,
         builder: (context, snapshot) {
-          // 1. Yükleniyor Durumu
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } 
-          // 2. Hata Durumu
-          else if (snapshot.hasError) {
+          } else if (snapshot.hasError) {
             return Center(child: Text("Hata: ${snapshot.error}"));
-          } 
-          // 3. Veri Yok Durumu
-          else if (!snapshot.hasData || snapshot.data == null) {
+          } else if (!snapshot.hasData || snapshot.data == null) {
             return const Center(child: Text("Proje bulunamadı"));
           }
 
-          // 4. Veri Hazır
           final project = snapshot.data!;
-          // Listeden ilk pencereyi alıyoruz (İleride Tabs yapabilirsin)
           if (project.windowUnits.isEmpty) {
              return const Center(child: Text("Bu projede hiç pencere yok."));
           }
@@ -211,21 +249,15 @@ class _ProjectScreenState extends State<ProjectScreen> {
           final windowUnit = project.windowUnits.first;
           final rootNode = windowUnit.rootNode!;
 
-          // LayoutBuilder: Ekranın kalan boş alanını ölçer
           return LayoutBuilder(
             builder: (context, constraints) {
-              
-              // Ekranın %90 genişliğini ve %70 yüksekliğini çizim alanı yapalım
               double availableWidth = constraints.maxWidth * 0.95;
               double availableHeight = constraints.maxHeight * 0.75;
 
-              // SCALE HESABI (En-boy oranını koruyarak sığdırma)
               double scaleX = availableWidth / rootNode.width;
               double scaleY = availableHeight / rootNode.height;
-              // Hangi oran daha küçükse onu baz al (Sığdırma mantığı)
               double scale = (scaleX < scaleY) ? scaleX : scaleY;
 
-              // Çizilecek alanın gerçek piksel boyutları
               double drawWidth = rootNode.width * scale;
               double drawHeight = rootNode.height * scale;
 
@@ -233,40 +265,18 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Başlık
-                    Text(
-                      windowUnit.name, 
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
-                    ),
+                    Text(windowUnit.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     
-                    // --- ETKİLEŞİMLİ ÇİZİM ALANI ---
                     GestureDetector(
                       onTapUp: (details) {
-                        // Tıklanan koordinat (Kutunun sol üstüne göre)
                         Offset localTouch = details.localPosition;
-                        
-                        // Hangi parçaya denk geldiğini bul (utils.dart)
-                        WindowNode? clickedNode = findNodeAt(
-                          rootNode, 
-                          localTouch, 
-                          Offset.zero, 
-                          scale
-                        );
+                        WindowNode? clickedNode = findNodeAt(rootNode, localTouch, Offset.zero, scale);
 
-                        if (clickedNode != null) {
-                          // Sadece EMPTY (Boşluk) olanlara tıklanabilsin
-                          if (clickedNode.nodeType == 'EMPTY') {
+                        if (clickedNode != null && clickedNode.nodeType == 'EMPTY') {
                              _showOptions(clickedNode);
-                          } else {
-                            // Dolu parçaya tıklandı (İleride silme/düzenleme eklenebilir)
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Seçilen parça: ${clickedNode.nodeType}")),
-                            );
-                          }
                         }
                       },
-                      // Container: Çizim alanı kadar yer kaplar
                       child: Container(
                         width: drawWidth,
                         height: drawHeight,
@@ -281,7 +291,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
                             )
                           ]
                         ),
-                        // CustomPaint: Çizimi yapar
                         child: CustomPaint(
                           painter: WindowPainter(rootNode: rootNode),
                           size: Size(drawWidth, drawHeight),
@@ -290,8 +299,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
                     ),
                     
                     const SizedBox(height: 20),
-                    
-                    // Bilgi Alanı
                     Chip(
                       label: Text("Gerçek Boyut: ${rootNode.width.toStringAsFixed(0)} x ${rootNode.height.toStringAsFixed(0)} mm"),
                       backgroundColor: Colors.blue.shade50,
