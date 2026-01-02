@@ -4,6 +4,7 @@ import '../models/project.dart';
 import '../widgets/window_painter.dart';
 import '../models/window_node.dart';
 import '../utils/utils.dart'; // findNodeAt fonksiyonunun burada olduğunu varsayıyoruz
+import '../models/profile.dart';
 
 class ProjectScreen extends StatefulWidget {
   final int projectId;
@@ -56,18 +57,52 @@ class _ProjectScreenState extends State<ProjectScreen> {
     }
   }
   
-  // Tip Güncelleme İşlemi
-  Future<void> _handleUpdateType(int nodeId, String type) async {
-    Navigator.pop(context);
+  // Not: artık doğrudan `_showMaterialDialog` kullanılıyor, bu helper fonksiyon gereksiz kaldı.
+
+  // Malzeme Seçim Dialogu
+  void _showMaterialDialog(WindowNode node, String targetType) async {
+    Navigator.pop(context); // Alttaki menüyü kapat
     
-  // API İsteği
-  bool success = await _apiService.updateNodeType(nodeId, type);
-    
-    if (success) {
-      _loadProject(); // Ekranı yenile
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hata oluştu")));
-    }
+    // 1. Önce Node Tipini Güncelle (Örn: EMPTY -> SASH)
+    // Bunu yapmazsak malzeme atayamayız (Validasyon varsa)
+    await _apiService.updateNodeType(node.id, targetType); 
+
+    // 2. Uygun Profilleri Çek (Örn: SASH profilleri)
+    // Not: GLASS için ayrı mantık kurmalısın, şimdilik Profil üzerinden gidelim.
+    List<Profile> profiles = await _apiService.getProfilesByType(targetType); 
+
+    if (!mounted) return;
+
+    // 3. Listeyi Göster
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("$targetType Seçimi"),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: ListView.builder(
+              itemCount: profiles.length,
+              itemBuilder: (context, index) {
+                final profile = profiles[index];
+                return ListTile(
+                  title: Text(profile.name),
+                  subtitle: Text("${profile.code} - ${profile.pricePerMeter} TL/m"),
+                  onTap: () async {
+                    Navigator.pop(context); // Dialogu kapat
+                    
+                    // 4. Seçilen Malzemeyi Ata
+                    bool success = await _apiService.assignMaterial(node.id, profile.id, 'PROFILE');
+                    if (success) _loadProject();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // Menüyü Güncelle
@@ -104,8 +139,8 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildActionButton(icon: Icons.crop_square, label: "Sabit Cam", color: Colors.lightBlue, onTap: () => _handleUpdateType(node.id, 'GLASS')),
-                    _buildActionButton(icon: Icons.window, label: "Kanat", color: Colors.redAccent, onTap: () => _handleUpdateType(node.id, 'SASH')),
+                    _buildActionButton(icon: Icons.crop_square, label: "Sabit Cam", color: Colors.lightBlue, onTap: () => _showMaterialDialog(node, 'GLASS')),
+                    _buildActionButton(icon: Icons.window, label: "Kanat", color: Colors.redAccent, onTap: () => _showMaterialDialog(node, 'SASH')),
                   ],
                 ),
               ],

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:iwindoor_mobil/models/profile.dart';
 import '../models/project.dart';
 
 class ApiService {
@@ -50,6 +51,34 @@ class ApiService {
       return response.statusCode == 200;
     } catch (e) {
       print("Tip Güncelleme Hatası: $e");
+      return false;
+    }
+  }
+
+  // Filtreli Profil Getir
+  Future<List<Profile>> getProfilesByType(String type) async {
+    try {
+      final response = await _dio.get('/catalog/profiles/filter', queryParameters: {'type': type});
+      if (response.statusCode == 200) {
+        var list = response.data as List;
+        return list.map((i) => Profile.fromJson(i)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Profil Çekme Hatası: $e");
+      return [];
+    }
+  }
+
+  // Malzeme Ata
+  Future<bool> assignMaterial(int nodeId, int materialId, String type) async {
+    try {
+      await _dio.post('/design/assign-material/$nodeId', queryParameters: {
+        'materialId': materialId,
+        'type': type // 'PROFILE' veya 'GLASS'
+      });
+      return true;
+    } catch (e) {
       return false;
     }
   }

@@ -1,3 +1,5 @@
+import 'profile.dart';
+
 class WindowNode {
   final int id;
   final String nodeType; // 'FRAME', 'SASH', 'GLASS' vb.
@@ -5,6 +7,8 @@ class WindowNode {
   final double height;
   final List<WindowNode> children;
   final int itemOrder;
+  final Profile? profile; // Yeni alan
+  // final Glass? glass; // Cam modeli ekleyince burayı açacağım
 
   WindowNode({
     required this.id,
@@ -13,6 +17,7 @@ class WindowNode {
     required this.height,
     required this.children,
     required this.itemOrder,
+    this.profile,
   });
 
   factory WindowNode.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,7 @@ class WindowNode {
       height: (json['height'] as num).toDouble(),
       itemOrder: json['itemOrder'] ?? 0,
       children: childrenList,
+      profile: json['profile'] != null ? Profile.fromJson(json['profile']) : null,
     );
   }
 }
