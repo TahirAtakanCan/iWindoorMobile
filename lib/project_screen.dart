@@ -55,51 +55,59 @@ class _ProjectScreenState extends State<ProjectScreen> {
       );
     }
   }
+  
+  // Tip Güncelleme İşlemi
+  Future<void> _handleUpdateType(int nodeId, String type) async {
+    Navigator.pop(context);
+    
+  // API İsteği
+  bool success = await _apiService.updateNodeType(nodeId, type);
+    
+    if (success) {
+      _loadProject(); // Ekranı yenile
+    } else {
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hata oluştu")));
+    }
+  }
 
-  // Alt Menüyü Göster
+  // Menüyü Güncelle
   void _showOptions(WindowNode node) {
     showModalBottomSheet(
       context: context,
-      // isScrollControlled: true, // Eğer içerik çok uzunsa bunu açabilirsin
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return SafeArea( // <--- EKLEME 1: Alt çentik (Home Indicator) payı bırakır
+        return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20), // İç boşluk
+            padding: const EdgeInsets.all(20),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // <--- EKLEME 2: İçerik kadar yer kapla (Sabit yükseklik yerine)
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "Parça İşlemleri (ID: ${node.id})",
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  "Bu boşluğu nasıl bölmek istersiniz?", 
-                  style: TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
+                Text("Parça Seçenekleri (ID: ${node.id})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 20),
+                
+                // --- BÖLME SEÇENEKLERİ ---
+                const Align(alignment: Alignment.centerLeft, child: Text("Bölme İşlemleri", style: TextStyle(color: Colors.grey))),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildActionButton(
-                      icon: Icons.splitscreen, 
-                      label: "Dikey Böl",
-                      onTap: () => _handleSplit(node.id, true),
-                      color: Colors.blue,
-                    ),
-                    _buildActionButton(
-                      icon: Icons.horizontal_split,
-                      label: "Yatay Böl",
-                      onTap: () => _handleSplit(node.id, false),
-                      color: Colors.orange,
-                    ),
+                    _buildActionButton(icon: Icons.splitscreen, label: "Dikey", color: Colors.blue, onTap: () => _handleSplit(node.id, true)),
+                    _buildActionButton(icon: Icons.horizontal_split, label: "Yatay", color: Colors.orange, onTap: () => _handleSplit(node.id, false)),
                   ],
                 ),
-                const SizedBox(height: 10), // Alt tarafa biraz nefes payı
+                
+                const Divider(height: 30),
+                
+                // --- DOLDURMA SEÇENEKLERİ ---
+                const Align(alignment: Alignment.centerLeft, child: Text("Atama İşlemleri", style: TextStyle(color: Colors.grey))),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildActionButton(icon: Icons.crop_square, label: "Sabit Cam", color: Colors.lightBlue, onTap: () => _handleUpdateType(node.id, 'GLASS')),
+                    _buildActionButton(icon: Icons.window, label: "Kanat", color: Colors.redAccent, onTap: () => _handleUpdateType(node.id, 'SASH')),
+                  ],
+                ),
               ],
             ),
           ),

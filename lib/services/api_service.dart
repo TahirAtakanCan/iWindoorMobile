@@ -40,4 +40,18 @@ class ApiService {
     }
   }
 
+  // Tip Güncelleme İsteği
+  Future<bool> updateNodeType(int nodeId, String type) async {
+    try {
+      final response = await _dio.post(
+        '/design/update-type/$nodeId',
+        queryParameters: {'type': type},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Tip Güncelleme Hatası: $e");
+      return false;
+    }
+  }
+
 }
