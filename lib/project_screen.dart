@@ -137,6 +137,77 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
   // --- ARAYÜZ ---
 
+  // Pencere Ekleme Dialogu
+  void _showAddWindowDialog() {
+    final nameController = TextEditingController();
+    final widthController = TextEditingController();
+    final heightController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Yeni Pencere Oluştur"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "Pencere Adı (Örn: Mutfak)"),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: widthController,
+                      decoration: const InputDecoration(labelText: "En (mm)"),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: heightController,
+                      decoration: const InputDecoration(labelText: "Boy (mm)"),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("İptal")),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty || widthController.text.isEmpty || heightController.text.isEmpty) return;
+
+                Navigator.pop(context); // Dialogu kapat
+
+                // API İsteği
+                bool success = await _apiService.addWindow(
+                  widget.projectId,
+                  nameController.text,
+                  double.parse(widthController.text),
+                  double.parse(heightController.text),
+                );
+
+                if (success) {
+                  _loadProject(); // Ekranı yenile (Artık çizim gelecek!)
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pencere oluşturuldu!")));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hata oluştu")));
+                }
+              },
+              child: const Text("Oluştur"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Menüyü Göster
   void _showOptions(WindowNode node) {
     showModalBottomSheet(
@@ -230,6 +301,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
           IconButton(onPressed: _loadProject, icon: const Icon(Icons.refresh))
         ],
       ),
+      // YENİ: Sağ alta ekleme butonu
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddWindowDialog,
+        child: const Icon(Icons.add),
+      ),
       body: FutureBuilder<Project?>(
         future: _projectFuture,
         builder: (context, snapshot) {
@@ -243,7 +319,23 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
           final project = snapshot.data!;
           if (project.windowUnits.isEmpty) {
-             return const Center(child: Text("Bu projede hiç pencere yok."));
+             return Center(
+               child: Column(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                 children: [
+                   const Icon(Icons.grid_off, size: 80, color: Colors.grey),
+                   const SizedBox(height: 20),
+                   const Text("Bu projede henüz pencere yok."),
+                   const SizedBox(height: 20),
+                   ElevatedButton.icon(
+                     onPressed: _showAddWindowDialog, 
+                     icon: const Icon(Icons.add),
+                     label: const Text("İlk Pencereyi Ekle"),
+                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15)),
+                   )
+                 ],
+               ),
+             );
           }
           
           final windowUnit = project.windowUnits.first;
@@ -273,8 +365,21 @@ class _ProjectScreenState extends State<ProjectScreen> {
                         Offset localTouch = details.localPosition;
                         WindowNode? clickedNode = findNodeAt(rootNode, localTouch, Offset.zero, scale);
 
-                        if (clickedNode != null && clickedNode.nodeType == 'EMPTY') {
-                             _showOptions(clickedNode);
+                        if (clickedNode != null) {
+                          // Menüyü açmak için şartlar:
+                          // 1. Düğümün tipi 'EMPTY' (Boşluk) ise
+                          // 2. VEYA Düğüm 'FRAME' (Kasa) ise ve henüz bölünmemişse (çocuğu yoksa)
+                          bool canInteract = clickedNode.nodeType == 'EMPTY' || 
+                                             (clickedNode.nodeType == 'FRAME' && clickedNode.children.isEmpty);
+
+                          if (canInteract) {
+                            _showOptions(clickedNode);
+                          } else {
+                            // Dolu veya bölünmüş parçaya tıklandı (İleride düzenleme eklenebilir)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Seçilen parça: ${clickedNode.nodeType}")),
+                            );
+                          }
                         }
                       },
                       child: Container(

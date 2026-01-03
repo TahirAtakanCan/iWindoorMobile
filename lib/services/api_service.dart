@@ -131,4 +131,19 @@ class ApiService {
     }
   }
 
+  // Pencere Ekle
+  Future<bool> addWindow(int projectId, String name, double width, double height) async {
+    try {
+      await _dio.post('/projects/$projectId/windows', data: {
+        "name": name,
+        "width": width,
+        "height": height
+      });
+      return true; // Başarılı
+    } catch (e) {
+      print("Pencere Ekleme Hatası: $e");
+      return false;
+    }
+  }
+
 }
