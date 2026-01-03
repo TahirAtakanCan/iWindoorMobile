@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'project_screen.dart';
+import 'screens/home_screen.dart'; // Import et
 
 void main() {
   runApp(const MyApp());
@@ -12,8 +12,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'iWindoor',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ProjectScreen(projectId: 1),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: const HomeScreen(), // <-- ARTIK BURADAN BAŞLIYORUZ
     );
   }
 }

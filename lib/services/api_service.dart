@@ -97,4 +97,38 @@ class ApiService {
     }
   }
 
+  // 1. Tüm Projeleri Çek
+  Future<List<Project>> getAllProjects() async {
+    try {
+      final response = await _dio.get('/projects');
+      if (response.statusCode == 200) {
+        var list = response.data as List;
+        return list.map((i) => Project.fromJson(i)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Proje Listesi Hatası: $e");
+      return [];
+    }
+  }
+
+  // 2. Yeni Proje Oluştur
+  Future<Project?> createProject(String name, String description) async {
+    try {
+      final response = await _dio.post('/projects', data: {
+        "name": name,
+        "description": description,
+        // Backend'de totalPrice ve windowUnits otomatik set ediliyor
+      });
+      
+      if (response.statusCode == 200) {
+        return Project.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      print("Proje Oluşturma Hatası: $e");
+      return null;
+    }
+  }
+
 }
