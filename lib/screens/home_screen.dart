@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/project.dart';
-import '../project_screen.dart';
+import 'project_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -151,15 +151,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   onTap: () async {
-                    // Detay Ekranına Git
-                    // Dönüşte listeyi yenile (Belki fiyat değişmiştir)
+                    // Detay Ekranına (Galeriye) Git
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProjectScreen(projectId: project.id),
+                        builder: (context) => ProjectDetailScreen(projectId: project.id),
                       ),
                     );
-                    _refreshProjects();
+                    _refreshProjects(); // Ana listeyi de yenile
                   },
                 ),
               );
