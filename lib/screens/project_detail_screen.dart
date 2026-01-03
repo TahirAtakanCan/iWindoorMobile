@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/project.dart';
-import 'window_editor_screen.dart'; // Az önce oluşturduğumuz ekran
-import '../widgets/window_thumbnail.dart'; // Önizleme widget'ı
+import 'window_editor_screen.dart';
+import '../widgets/window_thumbnail.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -28,7 +28,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     });
   }
 
-  // Yeni Pencere Ekleme Dialogu
   void _showAddWindowDialog() {
     final nameController = TextEditingController();
     final widthController = TextEditingController();
@@ -42,27 +41,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: nameController, 
-                decoration: const InputDecoration(labelText: "Poz Adı (Örn: P-01)", hintText: "Salon Penceresi")
-              ),
-              const SizedBox(height: 10),
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Poz Adı")),
               Row(children: [
-                Expanded(
-                  child: TextField(
-                    controller: widthController, 
-                    decoration: const InputDecoration(labelText: "En (mm)"), 
-                    keyboardType: TextInputType.number
-                  )
-                ),
+                Expanded(child: TextField(controller: widthController, decoration: const InputDecoration(labelText: "En"), keyboardType: TextInputType.number)),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: heightController, 
-                    decoration: const InputDecoration(labelText: "Boy (mm)"), 
-                    keyboardType: TextInputType.number
-                  )
-                ),
+                Expanded(child: TextField(controller: heightController, decoration: const InputDecoration(labelText: "Boy"), keyboardType: TextInputType.number)),
               ]),
             ],
           ),
@@ -70,20 +53,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("İptal")),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.isEmpty || widthController.text.isEmpty || heightController.text.isEmpty) return;
-                
+                if (nameController.text.isEmpty) return;
                 Navigator.pop(context);
-                
                 await _apiService.addWindow(
-                  widget.projectId,
-                  nameController.text,
-                  double.parse(widthController.text),
-                  double.parse(heightController.text),
+                  widget.projectId, nameController.text, 
+                  double.parse(widthController.text), double.parse(heightController.text)
                 );
-                
-                // Başarılı olursa listeyi yenile
                 _refreshProject();
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pencere eklendi!")));
               },
               child: const Text("Oluştur"),
             ),
@@ -96,80 +72,39 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Proje İçeriği"),
-        actions: [
-           // Gelecek özellikler için placeholder butonlar
-          IconButton(onPressed: () {}, icon: const Icon(Icons.picture_as_pdf), tooltip: "PDF"),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.price_check), tooltip: "Maliyet"),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
+      appBar: AppBar(title: const Text("Proje İçeriği")),
+      floatingActionButton: FloatingActionButton(
         onPressed: _showAddWindowDialog,
-        icon: const Icon(Icons.add),
-        label: const Text("Yeni Poz"),
+        child: const Icon(Icons.add),
       ),
       body: FutureBuilder<Project?>(
         future: _projectFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("Proje yüklenemedi."));
-          }
-          
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final project = snapshot.data!;
-          final units = project.windowUnits;
+          if (project.windowUnits.isEmpty) return const Center(child: Text("Henüz pencere yok."));
 
-          // Eğer hiç pencere yoksa
-          if (units.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.grid_view, size: 80, color: Colors.grey),
-                  const SizedBox(height: 20),
-                  const Text("Bu projede henüz pencere yok."),
-                  const SizedBox(height: 10),
-                  const Text("Sağ alttaki butondan ekleyebilirsin.", style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            );
-          }
-
-          // ME03 TARZI GRID GÖRÜNÜMÜ
           return GridView.builder(
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.all(10),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // Yan yana 2 tane
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              childAspectRatio: 0.85, // Kart oranı
+              crossAxisCount: 2, 
+              crossAxisSpacing: 10, 
+              mainAxisSpacing: 10, 
+              childAspectRatio: 0.9, // Kart oranı
             ),
-            itemCount: units.length,
+            itemCount: project.windowUnits.length,
             itemBuilder: (context, index) {
-              final unit = units[index];
+              final unit = project.windowUnits[index];
               return GestureDetector(
                 onTap: () async {
-                  // Seçilen pencereyi düzenlemek için Editör'e git
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WindowEditorScreen(
-                        projectId: project.id,
-                        windowUnit: unit, // Sadece bu üniteyi gönder
-                      ),
-                    ),
-                  );
-                  // Dönüşte listeyi güncelle (Fiyat veya görünüm değişmiş olabilir)
+                  await Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => WindowEditorScreen(projectId: project.id, windowUnit: unit),
+                  ));
                   _refreshProject();
                 },
                 child: WindowThumbnail(
-                  rootNode: unit.rootNode!,
-                  name: unit.name,
-                  widthMm: unit.width,
-                  heightMm: unit.height,
+                  rootNode: unit.rootNode!, name: unit.name, 
+                  widthMm: unit.width, heightMm: unit.height
                 ),
               );
             },

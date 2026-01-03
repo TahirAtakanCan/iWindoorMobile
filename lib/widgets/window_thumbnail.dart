@@ -20,61 +20,41 @@ class WindowThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          )
-        ],
       ),
       child: Column(
         children: [
-          // Çizim Alanı
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Minik ölçekleme hesabı
-                  double scaleX = constraints.maxWidth / widthMm;
-                  double scaleY = constraints.maxHeight / heightMm;
-                  double scale = (scaleX < scaleY) ? scaleX : scaleY;
-
-                  return CustomPaint(
-                    painter: WindowPainter(rootNode: rootNode),
-                    size: Size(widthMm * scale, heightMm * scale),
-                  );
-                },
+              // FittedBox ile sığdırma
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  // Sadece pencere boyutu kadar yer ayır (Padding yok)
+                  width: widthMm,
+                  height: heightMm,
+                  child: CustomPaint(
+                    painter: WindowPainter(
+                      rootNode: rootNode,
+                      showDimensions: false, // <--- ÖNEMLİ: Ölçüleri ve Padding'i kapat
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          // Alt Bilgi Alanı
+          // Alt bilgi
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  "${widthMm.toInt()} x ${heightMm.toInt()} mm",
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), overflow: TextOverflow.ellipsis),
+              Text("${widthMm.toInt()} x ${heightMm.toInt()}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            ]),
           ),
         ],
       ),
