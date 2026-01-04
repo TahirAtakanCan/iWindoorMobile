@@ -146,4 +146,30 @@ class ApiService {
     }
   }
 
+  // Proje Güncelle
+  Future<bool> updateProject(int id, String name, String description) async {
+    try {
+      final response = await _dio.put('/projects/$id', data: {
+        "name": name,
+        "description": description,
+        // Backend entity yapısına göre diğer alanlar null gidebilir veya mevcut korunur
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Güncelleme Hatası: $e");
+      return false;
+    }
+  }
+
+  // Proje Sil
+  Future<bool> deleteProject(int id) async {
+    try {
+      final response = await _dio.delete('/projects/$id');
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Silme Hatası: $e");
+      return false;
+    }
+  }
+
 }
