@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../models/project.dart';
 import 'window_editor_screen.dart';
 import '../widgets/window_thumbnail.dart';
+import 'cost_summary_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -215,8 +216,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   if (value == 'edit') _showEditProjectDialog(project);
                   if (value == 'delete') _confirmDelete();
                   if (value == 'cost') {
-                    // Maliyet ekranına git (İleride yapacağız)
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Maliyet Tablosu Yakında!")));
+                    // --- YENİ EKLENEN KISIM ---
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CostSummaryScreen(projectId: project.id),
+                      ),
+                    );
                   }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[

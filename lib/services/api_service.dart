@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:iwindoor_mobil/models/cost_summary.dart';
 import 'package:iwindoor_mobil/models/profile.dart';
 import '../models/project.dart';
 
@@ -203,6 +204,20 @@ class ApiService {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Maliyet Özeti Getir (MEO4)
+  Future<ProjectCostSummary?> getCostSummary(int projectId) async {
+    try {
+      final response = await _dio.get('/projects/$projectId/cost-summary');
+      if (response.statusCode == 200) {
+        return ProjectCostSummary.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      print("Maliyet Raporu Hatası: $e");
+      return null;
     }
   }
 
