@@ -172,4 +172,29 @@ class ApiService {
     }
   }
 
+  Future<List<Profile>> getAllProfilesForConfig() async {
+    try {
+      // Önce Frame, sonra Sash, sonra Mullion çekip birleştirelim
+      final frames = await getProfilesByType('FRAME');
+      final sashes = await getProfilesByType('SASH');
+      return [...frames, ...sashes];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Fiyat Güncelle
+  Future<bool> updateProfilePrice(int id, double newPrice) async {
+    try {
+      // Query param olarak gönderiyoruz (?price=...)
+      final response = await _dio.put('/catalog/profiles/$id/price', queryParameters: {
+        "price": newPrice
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Fiyat Güncelleme Hatası: $e");
+      return false;
+    }
+  }
+
 }
