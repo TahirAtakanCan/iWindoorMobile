@@ -20,6 +20,49 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   void initState() {
     super.initState();
     _refreshProject();
+    
+    // Ekran açıldıktan hemen sonra sor
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _askForPriceUpdate();
+    });
+  }
+
+  void _askForPriceUpdate() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text("Bu proje eski fiyatlarla hesaplanmış olabilir."),
+        duration: const Duration(seconds: 10), // Uzun kalsın
+        action: SnackBarAction(
+          label: "GÜNCEL FİYATA ÇEK",
+          textColor: Colors.yellowAccent,
+          onPressed: () {
+            _confirmPriceSync();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _confirmPriceSync() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Fiyatlar Güncellensin mi?"),
+        content: const Text("Projedeki tüm pencerelerin maliyeti, Ayarlar menüsündeki EN GÜNCEL birim fiyatlara göre yeniden hesaplanacak.\n\nBu işlem geri alınamaz."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Vazgeç")),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _apiService.syncProjectPrices(widget.projectId);
+              _refreshProject(); // Yeni fiyatı göster
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Proje güncel kurlara çekildi.")));
+            },
+            child: const Text("Güncelle"),
+          ),
+        ],
+      ),
+    );
   }
 
   void _refreshProject() {

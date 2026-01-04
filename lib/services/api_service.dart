@@ -197,4 +197,13 @@ class ApiService {
     }
   }
 
+  Future<bool> syncProjectPrices(int projectId) async {
+    try {
+      await _dio.post('/projects/$projectId/sync-prices');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
 }
