@@ -73,16 +73,62 @@ class _WindowEditorScreenState extends State<WindowEditorScreen> {
     if (selectedNodeId == null) return _showMsg("Lütfen önce bir parça seçin.");
 
     if (type == 'SASH') {
-      // Kanat ise önce profil seçtirmemiz lazım
-      _showProfileDialog(selectedNodeId!, type); 
-    } else {
-      // Cam ise direkt ata
+      _showProfileDialog(selectedNodeId!, 'SASH'); // Kanat profili seç
+    } 
+    else if (type == 'GLASS') {
+      // --- YENİ: Cam için de seçim ekranı aç ---
+      // (Böylece fiyat hesaplanabilecek)
+      _showGlassDialog(selectedNodeId!);
+    } 
+    else {
       bool success = await _apiService.updateNodeType(selectedNodeId!, type);
       if (success) {
         await _apiService.calculatePrice(widget.projectId);
         _reloadUnit();
       }
     }
+  }
+
+  // --- YENİ CAM DİALOGU ---
+  void _showGlassDialog(int nodeId) async {
+    // API'den camları çek (ApiService'e getAllGlasses eklemeyi unutma)
+    List<Glass> glasses = await _apiService.getAllGlasses(); 
+    
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text("Cam Seçimi"),
+        content: SizedBox(
+          width: double.maxFinite, height: 300,
+          child: glasses.isEmpty 
+            ? const Center(child: Text("Tanımlı cam bulunamadı.")) 
+            : ListView.builder(
+              itemCount: glasses.length,
+              itemBuilder: (c, i) => ListTile(
+                leading: const Icon(Icons.grid_on, color: Colors.blueAccent),
+                title: Text(glasses[i].name),
+                subtitle: Text("${glasses[i].pricePerSquareMeter} TL/m2"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  
+                  // 1. Tipi GLASS yap
+                  await _apiService.updateNodeType(nodeId, 'GLASS');
+                  
+                  // 2. Camı Ata (Backend'e ID gönder)
+                  await _apiService.assignMaterial(nodeId, glasses[i].id, 'GLASS');
+                  
+                  // 3. Hesapla ve Yenile
+                  await _apiService.calculatePrice(widget.projectId);
+                  _reloadUnit();
+                  _showMsg("${glasses[i].name} atandı.");
+                },
+              ),
+            ),
+        ),
+      ),
+    );
   }
 
   void _showProfileDialog(int nodeId, String type) async {

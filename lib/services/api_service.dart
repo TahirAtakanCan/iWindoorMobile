@@ -207,6 +207,34 @@ class ApiService {
     }
   }
 
+  // Tüm Camları Getir
+  Future<List<Glass>> getAllGlasses() async {
+    try {
+      final response = await _dio.get('/catalog/glasses');
+      if (response.statusCode == 200) {
+        var list = response.data as List;
+        return list.map((i) => Glass.fromJson(i)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Cam Listesi Hatası: $e");
+      return [];
+    }
+  }
+
+  // Cam Fiyatı Güncelle
+  Future<bool> updateGlassPrice(int id, double newPrice) async {
+    try {
+      final response = await _dio.put('/catalog/glasses/$id/price', queryParameters: {
+        "price": newPrice
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Cam Fiyat Güncelleme Hatası: $e");
+      return false;
+    }
+  }
+
   // Maliyet Özeti Getir (MEO4)
   Future<ProjectCostSummary?> getCostSummary(int projectId) async {
     try {

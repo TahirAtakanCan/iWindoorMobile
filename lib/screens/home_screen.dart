@@ -55,20 +55,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (nameController.text.isEmpty) return;
-                
-                Navigator.pop(context); // Dialogu kapat
-                
-                // Backend'e kaydet
+                Navigator.pop(context);
+
+                // 1. Projeyi Oluştur
                 Project? newProject = await _apiService.createProject(
                   nameController.text, 
                   descController.text
                 );
 
                 if (newProject != null) {
-                  _refreshProjects(); // Listeyi yenile
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Proje oluşturuldu!")));
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Hata oluştu!")));
+                  _refreshProjects(); // Listeyi güncelle
+                  
+                  // 2. Detay Ekranına Git (isNewProject: TRUE)
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProjectDetailScreen(
+                          projectId: newProject.id,
+                        ),
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text("Oluştur"),
@@ -217,7 +225,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProjectDetailScreen(projectId: project.id),
+                          builder: (context) => ProjectDetailScreen(
+                            projectId: project.id,
+                          ),
                         ),
                       );
                       _refreshProjects();
@@ -231,3 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+//SON GÜNCEL BAZLI FİYAT DEĞİŞİKLİĞİ YAPMAK İSTER MİSİNİSİNİZ SORUSU ?
+//PROJEYE GÖRE FİYAT DEĞİŞİKLİĞİ YAPILABİLİR.

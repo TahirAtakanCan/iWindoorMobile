@@ -21,27 +21,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   void initState() {
     super.initState();
     _refreshProject();
-    
-    // Ekran açıldıktan hemen sonra sor
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _askForPriceUpdate();
-    });
-  }
-
-  void _askForPriceUpdate() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text("Bu proje eski fiyatlarla hesaplanmış olabilir."),
-        duration: const Duration(seconds: 10), // Uzun kalsın
-        action: SnackBarAction(
-          label: "GÜNCEL FİYATA ÇEK",
-          textColor: Colors.yellowAccent,
-          onPressed: () {
-            _confirmPriceSync();
-          },
-        ),
-      ),
-    );
   }
 
   void _confirmPriceSync() {
@@ -216,7 +195,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   if (value == 'edit') _showEditProjectDialog(project);
                   if (value == 'delete') _confirmDelete();
                   if (value == 'cost') {
-                    // --- YENİ EKLENEN KISIM ---
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -224,13 +202,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       ),
                     );
                   }
+                  if (value == 'sync_prices') _confirmPriceSync();
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   const PopupMenuItem<String>(
                     value: 'edit',
                     child: ListTile(
                       leading: Icon(Icons.edit),
-                      title: Text('Proje Bilgileri'), // Edit Item Specs
+                      title: Text('Proje Bilgileri'),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -242,12 +221,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
+                  const PopupMenuItem<String>(
+                    value: 'sync_prices',
+                    child: ListTile(
+                      leading: Icon(Icons.sync, color: Colors.orange),
+                      title: Text('Fiyatları Güncelle'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                   const PopupMenuDivider(),
                   const PopupMenuItem<String>(
                     value: 'delete',
                     child: ListTile(
                       leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('Projeyi Sil', style: TextStyle(color: Colors.red)), // Delete Item
+                      title: Text('Projeyi Sil', style: TextStyle(color: Colors.red)),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
