@@ -5,6 +5,7 @@ import 'window_editor_screen.dart';
 import '../widgets/window_thumbnail.dart';
 import 'cost_summary_screen.dart';
 import 'project_specs_screen.dart';
+import '../services/pdf_service.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -114,11 +115,22 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   // 3. PDF Paylaş (Share PDF)
-  void _shareAsPdf() {
-    // Buraya ileride PDF paketini entegre edeceğiz.
+  // 3. PDF Paylaş (Share PDF)
+  Future<void> _shareAsPdf(Project project) async {
+    // Bekleme göstergesi (SnackBar)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("PDF Hazırlanıyor... (Yakında)"), backgroundColor: Colors.orange),
+      const SnackBar(content: Text("PDF Hazırlanıyor..."), duration: Duration(seconds: 1)),
     );
+
+    try {
+      final PdfService pdfService = PdfService();
+      await pdfService.generateAndPrintProjectReport(project);
+    } catch (e) {
+      print("PDF Hatası: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("PDF oluşturulurken hata oluştu."), backgroundColor: Colors.red),
+      );
+    }
   }
 
   // 4. Yeni Pencere Ekle
@@ -185,9 +197,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             actions: [
               // 1. PDF PAYLAŞ BUTONU (Resimdeki Paylaş butonu yerine)
               IconButton(
-                icon: const Icon(Icons.picture_as_pdf), // Veya Icons.share
-                tooltip: "PDF Olarak Paylaş",
-                onPressed: _shareAsPdf,
+                icon: const Icon(Icons.picture_as_pdf),
+                tooltip: "PDF Paylaş",
+                // Değişiklik burada:
+                onPressed: () => _shareAsPdf(project), 
               ),
               
               // 2. ÜÇ NOKTA MENÜSÜ (Edit Item Specs, Delete Item...)
