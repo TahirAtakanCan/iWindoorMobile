@@ -4,6 +4,7 @@ import '../models/project.dart';
 import 'window_editor_screen.dart';
 import '../widgets/window_thumbnail.dart';
 import 'cost_summary_screen.dart';
+import 'project_specs_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final int projectId;
@@ -203,6 +204,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     );
                   }
                   if (value == 'sync_prices') _confirmPriceSync();
+                  if (value == 'specs') {
+                    Navigator.push(context, MaterialPageRoute(builder: (c) => ProjectSpecsScreen(projectId: project.id)));
+                  }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   const PopupMenuItem<String>(
@@ -210,6 +214,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     child: ListTile(
                       leading: Icon(Icons.edit),
                       title: Text('Proje Bilgileri'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'specs',
+                    child: ListTile(
+                      leading: Icon(Icons.assignment),
+                      title: Text('Teknik Özellikler'),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),

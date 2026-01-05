@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:iwindoor_mobil/models/cost_summary.dart';
 import 'package:iwindoor_mobil/models/profile.dart';
 import '../models/project.dart';
+import '../models/project_specs.dart';
 
 class ApiService {
   // Android Emulator için: 10.0.2.2
@@ -245,6 +246,20 @@ class ApiService {
       return null;
     } catch (e) {
       print("Maliyet Raporu Hatası: $e");
+      return null;
+    }
+  }
+
+  // MEO5: Teknik Özeti Getir
+  Future<ProjectSpecs?> getProjectSpecs(int projectId) async {
+    try {
+      final response = await _dio.get('/projects/$projectId/specs');
+      if (response.statusCode == 200) {
+        return ProjectSpecs.fromJson(response.data);
+      }
+      return null;
+    } catch (e) {
+      print("Specs Hatası: $e");
       return null;
     }
   }
