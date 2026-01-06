@@ -3,6 +3,7 @@ import 'package:iwindoor_mobil/models/cost_summary.dart';
 import 'package:iwindoor_mobil/models/profile.dart';
 import '../models/project.dart';
 import '../models/project_specs.dart';
+import 'auth_service.dart';
 
 class ApiService {
   // Android Emulator için: 10.0.2.2
@@ -13,6 +14,26 @@ class ApiService {
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 5),
   ));
+  
+  ApiService() {
+    // HER İSTEKTE TOKEN EKLEME MANTIĞI
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await AuthService().getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token'; // Token'ı başlığa ekle
+        }
+        return handler.next(options);
+      },
+      onError: (DioException e, handler) {
+        if (e.response?.statusCode == 403) {
+          // Token süresi dolmuş olabilir, kullanıcıyı Login'e atmak gerekebilir.
+          print("Yetkisiz Erişim (403)");
+        }
+        return handler.next(e);
+      },
+    ));
+  }  
 
   Future<Project?> getProject(int id) async {
     try {
