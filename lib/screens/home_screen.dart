@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../models/project.dart';
 import 'project_detail_screen.dart';
 import 'price_settings_screen.dart';
+import 'employee_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -120,6 +121,14 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.pop(context); // Menüyü kapat
                 Navigator.push(context, MaterialPageRoute(builder: (context) => const PriceSettingsScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text("Çalışanlar"),
+              onTap: () {
+                Navigator.pop(context); // Menüyü kapat
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const EmployeeListScreen()));
               },
             ),
             ListTile(

@@ -4,6 +4,7 @@ import 'package:iwindoor_mobil/models/profile.dart';
 import '../models/project.dart';
 import '../models/project_specs.dart';
 import 'auth_service.dart';
+import '../models/user_model.dart';
 
 class ApiService {
   // Android Emulator için: 10.0.2.2
@@ -282,6 +283,36 @@ class ApiService {
     } catch (e) {
       print("Specs Hatası: $e");
       return null;
+    }
+  }
+
+  // Çalışanları Listele
+  Future<List<UserModel>> getEmployees() async {
+    try {
+      final response = await _dio.get('/users');
+      if (response.statusCode == 200) {
+        var list = response.data as List;
+        return list.map((e) => UserModel.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Çalışan Listesi Hatası: $e");
+      return [];
+    }
+  }
+
+  // Yeni Çalışan Ekle
+  Future<bool> createEmployee(String fullName, String email, String password) async {
+    try {
+      final response = await _dio.post('/users', data: {
+        'fullName': fullName,
+        'email': email,
+        'password': password,
+      });
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Çalışan Ekleme Hatası: $e");
+      return false;
     }
   }
 
