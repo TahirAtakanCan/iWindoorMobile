@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../models/project.dart';
 import 'project_detail_screen.dart';
 import 'price_settings_screen.dart';
 import 'employee_list_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -151,10 +153,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text("Çıkış Yap", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-              onTap: () {
-                // Şimdilik pasif (Toast mesajı gösterebiliriz)
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Çıkış özelliği yakında aktif olacak.")));
+              onTap: () async {
+                Navigator.pop(context); // Menüyü kapat
+                
+                // Çıkış yap
+                await AuthService().logout();
+                
+                // Login ekranına yönlendir ve geri dönüşü engelle
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
             ),
             const SizedBox(height: 20), // En alttan biraz boşluk

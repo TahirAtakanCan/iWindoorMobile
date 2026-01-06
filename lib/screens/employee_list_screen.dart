@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../models/user_model.dart';
 
 class EmployeeListScreen extends StatefulWidget {
@@ -12,11 +13,20 @@ class EmployeeListScreen extends StatefulWidget {
 class _EmployeeListScreenState extends State<EmployeeListScreen> {
   final ApiService _apiService = ApiService();
   late Future<List<UserModel>> _employeesFuture;
+  String? _currentUserRole;
 
   @override
   void initState() {
     super.initState();
+    _loadRole();
     _refreshList();
+  }
+
+  Future<void> _loadRole() async {
+    final role = await AuthService().getRole();
+    setState(() {
+      _currentUserRole = role;
+    });
   }
 
   void _refreshList() {
@@ -77,10 +87,12 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Çalışan Yönetimi")),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddEmployeeDialog,
-        child: const Icon(Icons.person_add),
-      ),
+      floatingActionButton: _currentUserRole == 'COMPANY_ADMIN'
+          ? FloatingActionButton(
+              onPressed: _showAddEmployeeDialog,
+              child: const Icon(Icons.person_add),
+            )
+          : null,
       body: FutureBuilder<List<UserModel>>(
         future: _employeesFuture,
         builder: (context, snapshot) {

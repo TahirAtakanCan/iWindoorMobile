@@ -26,8 +26,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final token = response.data['token'];
+        final role = response.data['role'];
+
         if (token != null) {
           await _saveToken(token);
+          if (role != null) await _saveRole(role);
           return true;
         }
       }
@@ -57,8 +60,11 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final token = response.data['token'];
+        final role = response.data['role'];
+
         if (token != null) {
           await _saveToken(token);
+          if (role != null) await _saveRole(role);
           return true;
         }
       }
@@ -91,5 +97,17 @@ class AuthService {
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');
+  }
+
+  // Rolü Telefona Kaydet
+  Future<void> _saveRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_role', role);
+  }
+
+  // Rolü Getir
+  Future<String?> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_role');
   }
 }
