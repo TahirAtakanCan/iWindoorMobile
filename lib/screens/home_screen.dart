@@ -17,11 +17,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
   late Future<List<Project>> _projectsFuture;
+  
+  // Kullanıcı bilgilerini tutacak değişkenler
+  String _userName = "Yükleniyor...";
+  String _userEmail = "";
 
   @override
   void initState() {
     super.initState();
     _refreshProjects();
+    _loadUserInfo(); // Ekran açılınca kullanıcı bilgilerini çek
+  }
+
+  // Bilgileri servisten (SharedPreferences) al
+  void _loadUserInfo() async {
+    final info = await AuthService().getUserInfo();
+    if (mounted) {
+      setState(() {
+        _userName = info['name']!;
+        _userEmail = info['email']!;
+      });
+    }
   }
 
   void _refreshProjects() {
@@ -106,11 +122,17 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Üst Başlık (Header)
             UserAccountsDrawerHeader(
-              accountName: const Text("Yönetici"),
-              accountEmail: const Text("admin@iwindoor.com"),
+              accountName: Text(
+                _userName,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              accountEmail: Text(_userEmail),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Text("A", style: TextStyle(fontSize: 24, color: Colors.blue.shade800)),
+                child: Text(
+                  _userName.isNotEmpty ? _userName[0].toUpperCase() : "A",
+                  style: TextStyle(fontSize: 24, color: Colors.blue.shade800),
+                ),
               ),
               decoration: BoxDecoration(color: Colors.blue.shade800),
             ),

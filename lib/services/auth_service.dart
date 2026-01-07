@@ -27,10 +27,14 @@ class AuthService {
       if (response.statusCode == 200) {
         final token = response.data['token'];
         final role = response.data['role'];
+        final fullName = response.data['fullName']; // <-- AL
+        final email = response.data['email'];       // <-- AL
 
         if (token != null) {
           await _saveToken(token);
           if (role != null) await _saveRole(role);
+          // İsim ve emaili kaydet
+          if (fullName != null) await _saveUserInfo(fullName, email ?? ""); 
           return true;
         }
       }
@@ -61,10 +65,14 @@ class AuthService {
       if (response.statusCode == 200) {
         final token = response.data['token'];
         final role = response.data['role'];
+        final fullName = response.data['fullName']; // <-- AL
+        final email = response.data['email'];       // <-- AL
 
         if (token != null) {
           await _saveToken(token);
           if (role != null) await _saveRole(role);
+          // İsim ve emaili kaydet
+          if (fullName != null) await _saveUserInfo(fullName, email ?? ""); 
           return true;
         }
       }
@@ -110,4 +118,20 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_role');
   }
+
+  Future<void> _saveUserInfo(String name, String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', name);
+    await prefs.setString('user_email', email);
+  }
+
+  // Kullanıcı bilgilerini (Ad ve Email) getiren metod
+  Future<Map<String, String>> getUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'name': prefs.getString('user_name') ?? "Kullanıcı",
+      'email': prefs.getString('user_email') ?? "",
+    };
+  }
+
 }
